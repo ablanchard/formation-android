@@ -1,0 +1,11 @@
+INDEX VERSION 1.126+/home/excilys/androidworkspace/.metadata/.plugins/org.eclipse.jdt.core
+3719738530.index
+2108588069.index
+3885164076.index
+386786801.index
+3772068166.index
+741232343.index
+310634112.index
+3745755427.index
+4053958816.index
+1231254618.index

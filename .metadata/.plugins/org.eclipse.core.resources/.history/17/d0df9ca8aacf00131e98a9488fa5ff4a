@@ -1,0 +1,158 @@
+package com.example.parlezvousandroid;
+
+
+
+import java.io.IOException;
+import java.net.URL;
+
+import org.apache.http.HttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+
+import android.app.Activity;
+import android.content.Intent;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
+import android.widget.EditText;
+import android.widget.Toast;
+
+public class MainActivity extends Activity implements OnClickListener {
+
+	private final String TAG = MainActivity.class.getSimpleName();
+	
+    @Override
+    protected void onCreate(Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        setContentView(R.layout.activity_main);
+        Button emptyButton = (Button) findViewById(R.id.empty_button);
+    	Button sendButton = (Button) findViewById(R.id.send_button);
+
+    	emptyButton.setOnClickListener(this);
+    	sendButton.setOnClickListener(this);
+    }
+
+
+    @Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+        getMenuInflater().inflate(R.menu.main, menu);
+        return true;
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+        // Handle action bar item clicks here. The action bar will
+        // automatically handle clicks on the Home/Up button, so long
+        // as you specify a parent activity in AndroidManifest.xml.
+        int id = item.getItemId();
+        if (id == R.id.action_settings) {
+            return true;
+        }
+        return super.onOptionsItemSelected(item);
+    }
+
+	@Override
+	public void onClick(View clickedView) {
+
+		EditText usernameField = (EditText) findViewById(R.id.username_field);
+    	EditText passField = (EditText) findViewById(R.id.pass_field);
+		switch(clickedView.getId()){
+		case R.id.empty_button:
+	    	usernameField.setText("");
+	    	passField.setText("");
+			findViewById(R.id.warning).setVisibility(View.GONE);
+	    	break;
+		case R.id.send_button:
+			if(validate(usernameField) && validate(passField)){
+				findViewById(R.id.warning).setVisibility(View.GONE);
+				Toast.makeText(this, "Toast !", Toast.LENGTH_SHORT).show();
+				new ParlezVousTask().execute();
+			} else{
+				findViewById(R.id.warning).setVisibility(View.VISIBLE);
+			}
+			break;
+		}
+	}
+	
+	private boolean validate(EditText editText){
+		if(editText.getText().toString().trim().isEmpty()){
+			editText.setError("This field is empty");
+			return false;
+		}
+		return true;
+	}
+	
+	@Override
+	protected void onSaveInstanceState(Bundle outState){
+		super.onSaveInstanceState(outState);
+		outState.putInt("error.visibility", findViewById(R.id.warning).getVisibility());
+	}
+	
+	@Override
+	protected void onRestoreInstanceState(Bundle savedInstanceState){
+		super.onRestoreInstanceState(savedInstanceState);
+		findViewById(R.id.warning).setVisibility(savedInstanceState.getInt("error.visibility"));
+	}
+	
+	public class ParlezVousTask extends android.os.AsyncTask<URL,Integer,Integer> {
+
+		public static final String HOST = "dev.loicortola.com/parlez-vous-android";
+		public static final String PORT ="";
+		
+		private String pseudo;
+		@Override
+		protected Integer doInBackground(URL... params) {
+
+			EditText usernameField = (EditText) findViewById(R.id.username_field);
+	    	EditText passField = (EditText) findViewById(R.id.pass_field);
+			String username = usernameField.getText().toString();
+			String pass = passField.getText().toString();
+			pseudo = username;
+			try{
+				DefaultHttpClient client = new DefaultHttpClient();
+				HttpGet request = new HttpGet("http://" + HOST + "/connect/" + username + "/" + pass );
+				HttpResponse response = client.execute(request);
+				String content = InputStreamToString.convert(response.getEntity().getContent());
+				Log.i(TAG, "doInBackground");
+				if(content.equals("true")){
+					return 1;
+				}
+			} catch(IOException e){
+				
+			}
+			
+			return 0;
+		}
+		
+		@Override
+		protected void onPreExecute(){
+			findViewById(R.id.progress_bar).setVisibility(View.VISIBLE);
+		}
+		
+		@Override
+		protected void onPostExecute(Integer result){
+
+			if(result == 1){
+				findViewById(R.id.progress_bar).setVisibility(View.GONE);
+				Log.i(TAG,"Success");
+				Intent intent = new Intent();
+				intent.putExtra("pseudo", pseudo);
+				intent.setAction("com.excilys.parlezvousandroid.AuthActivity");
+				startActivity(intent);
+			} else{
+				Log.i(TAG,"Error logging");
+			}
+			
+			
+		}
+		
+
+	}
+
+
+}
